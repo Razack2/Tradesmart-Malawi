@@ -1,1 +1,1 @@
-# Tradesmart-Malawi
+# Tradesmart Malawi

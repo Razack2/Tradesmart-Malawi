@@ -1,0 +1,148 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+@layer base {
+  :root {
+    --background: 220 20% 97%;
+    --foreground: 220 25% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 25% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 25% 10%;
+
+    --primary: 160 84% 30%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 15% 92%;
+    --secondary-foreground: 220 25% 10%;
+
+    --muted: 220 15% 94%;
+    --muted-foreground: 220 10% 46%;
+
+    --accent: 45 93% 48%;
+    --accent-foreground: 220 25% 10%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 15% 88%;
+    --input: 220 15% 88%;
+    --ring: 160 84% 30%;
+
+    --radius: 0.625rem;
+
+    --sidebar-background: 220 25% 10%;
+    --sidebar-foreground: 220 15% 85%;
+    --sidebar-primary: 160 84% 39%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 20% 16%;
+    --sidebar-accent-foreground: 220 15% 90%;
+    --sidebar-border: 220 20% 18%;
+    --sidebar-ring: 160 84% 39%;
+
+    --trading-green: 160 84% 39%;
+    --trading-green-light: 160 60% 45%;
+    --trading-gold: 45 93% 48%;
+    --trading-gold-light: 45 90% 58%;
+    --trading-red: 0 72% 51%;
+    --locked: 220 15% 75%;
+    --locked-bg: 220 15% 94%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(160 84% 30%), hsl(160 60% 45%));
+    --gradient-gold: linear-gradient(135deg, hsl(45 93% 48%), hsl(45 90% 58%));
+    --gradient-hero: linear-gradient(135deg, hsl(220 25% 8%), hsl(220 20% 14%));
+    --shadow-card: 0 1px 3px hsl(220 25% 10% / 0.06), 0 1px 2px hsl(220 25% 10% / 0.04);
+    --shadow-elevated: 0 10px 25px hsl(220 25% 10% / 0.08), 0 4px 10px hsl(220 25% 10% / 0.04);
+  }
+
+  .dark {
+    --background: 220 25% 6%;
+    --foreground: 220 15% 93%;
+
+    --card: 220 20% 10%;
+    --card-foreground: 220 15% 93%;
+
+    --popover: 220 20% 10%;
+    --popover-foreground: 220 15% 93%;
+
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 20% 16%;
+    --secondary-foreground: 220 15% 90%;
+
+    --muted: 220 20% 14%;
+    --muted-foreground: 220 10% 55%;
+
+    --accent: 45 93% 48%;
+    --accent-foreground: 220 25% 10%;
+
+    --destructive: 0 62% 30.6%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 20% 18%;
+    --input: 220 20% 18%;
+    --ring: 160 84% 39%;
+
+    --sidebar-background: 220 25% 6%;
+    --sidebar-foreground: 220 15% 85%;
+    --sidebar-primary: 160 84% 39%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 20% 12%;
+    --sidebar-accent-foreground: 220 15% 90%;
+    --sidebar-border: 220 20% 14%;
+    --sidebar-ring: 160 84% 39%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif;
+  }
+}
+
+@layer components {
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .gradient-gold {
+    background: var(--gradient-gold);
+  }
+
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .shadow-elevated {
+    box-shadow: var(--shadow-elevated);
+  }
+
+  .locked-overlay {
+    @apply relative overflow-hidden;
+  }
+
+  .locked-overlay::after {
+    content: '';
+    @apply absolute inset-0;
+    background: hsl(var(--locked-bg) / 0.8);
+    backdrop-filter: blur(4px);
+  }
+}
