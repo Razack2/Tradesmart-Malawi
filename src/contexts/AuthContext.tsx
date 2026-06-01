@@ -21,6 +21,7 @@ interface ExtendedUser {
   unlocked_levels: string[];
 }
 
+
 interface AuthContextType {
   user: ExtendedUser | null;
   isLoading: boolean;
@@ -405,75 +406,40 @@ export function AuthProvider({
     };
 
   // Unlock Package
-  const upgradeSubscription =
-    async (
-      levelId: string
-    ): Promise<boolean> => {
-      if (!user)
-        return false;
+  const upgradeSubscription = async (levelId: string, paymentRef?: string) => {
+  if (!user) return false;
 
-      const current =
-        user.unlocked_levels ||
-        [];
+  // 1. WAIT FOR PAYMENT CONFIRMATION
+  const { data: payment } = await supabase
+    .from("payments")
+    .select("*")
+    .eq("transaction_ref", paymentRef)
+    .eq("status", "confirmed")
+    .single();
 
-      // already owned
-      if (
-        current.includes(
-          levelId
-        )
-      ) {
-        return true;
-      }
+  if (!payment) return false;
 
-      const updatedLevels =
-        [
-          ...current,
-          levelId,
-        ];
+  // 2. UPDATE ENTITLEMENTS
+  const updated = [
+    ...(user.unlocked_levels || []),
+    levelId,
+  ];
 
-      const {
-        error,
-      } =
-        await supabase
-          .from(
-            "user_profiles"
-          )
-          .update({
-            unlocked_levels:
-              updatedLevels,
-            subscription:
-              "paid",
-          })
-          .eq(
-            "id",
-            user.id
-          );
+  await supabase
+    .from("user_profiles")
+    .update({
+      unlocked_levels: updated,
+    })
+    .eq("id", user.id);
 
-      if (error) {
-        console.error(
-          error
-        );
-        return false;
-      }
+  setUser((prev) =>
+    prev
+      ? { ...prev, unlocked_levels: updated }
+      : prev
+  );
 
-      setUser(
-        (
-          prev
-        ) =>
-          prev
-            ? {
-                ...prev,
-                subscription:
-                  "paid",
-                unlocked_levels:
-                  updatedLevels,
-              }
-            : null
-      );
-
-      return true;
-    };
-
+  return true;
+};
   // Access Check
   const hasUnlockedLevel =
     (

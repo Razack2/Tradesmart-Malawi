@@ -60,7 +60,7 @@ const App = () => (
                     <Route path="/level/:levelId" element={<LevelPage />} />
                     <Route path="/course/:courseId" element={<CoursePage />} />
                     <Route path="/lesson/:lessonId" element={<LessonPage />} />
-                    <Route path="/upgrade" element={<MakePaymentPage />} />
+                    <Route path="/payment/:levelId" element={<MakePaymentPage />}/>
 
                     {/* Admin routes */}
                     <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>}>
