@@ -48,7 +48,8 @@ interface AuthContextType {
 
   // unlock selected package
   upgradeSubscription: (
-    levelId: string
+    levelId: string,
+    paymentRef?: string
   ) => Promise<boolean>;
 
   hasUnlockedLevel: (
@@ -406,40 +407,63 @@ export function AuthProvider({
     };
 
   // Unlock Package
-  const upgradeSubscription = async (levelId: string, paymentRef?: string) => {
-  if (!user) return false;
+  const upgradeSubscription = async (
+    levelId: string,
+    paymentRef?: string
+  ) => {
+    console.log("upgradeSubscription called with levelId:", levelId, "paymentRef:", paymentRef);
+    if (!user) {
+      console.log("No user found");
+      return false;
+    }
 
-  // 1. WAIT FOR PAYMENT CONFIRMATION
-  const { data: payment } = await supabase
-    .from("payments")
-    .select("*")
-    .eq("transaction_ref", paymentRef)
-    .eq("status", "confirmed")
-    .single();
+    // If a payment reference is provided, require the payment to be confirmed.
+    if (paymentRef) {
+      const { data: payment } = await supabase
+        .from("payments")
+        .select("*")
+        .eq("transaction_ref", paymentRef)
+        .eq("status", "confirmed")
+        .single();
 
-  if (!payment) return false;
+      if (!payment) {
+        console.log("Payment not confirmed");
+        return false;
+      }
+    }
 
-  // 2. UPDATE ENTITLEMENTS
-  const updated = [
-    ...(user.unlocked_levels || []),
-    levelId,
-  ];
+    const updatedLevels = Array.from(
+      new Set([...(user.unlocked_levels || []), levelId])
+    );
+    console.log("Updated levels:", updatedLevels);
 
-  await supabase
-    .from("user_profiles")
-    .update({
-      unlocked_levels: updated,
-    })
-    .eq("id", user.id);
+    const { error } = await supabase
+      .from("user_profiles")
+      .update({
+        unlocked_levels: updatedLevels,
+        subscription: "paid",
+      })
+      .eq("id", user.id);
 
-  setUser((prev) =>
-    prev
-      ? { ...prev, unlocked_levels: updated }
-      : prev
-  );
+    if (error) {
+      console.error("Failed to unlock package:", error);
+      return false;
+    }
 
-  return true;
-};
+    console.log("Database updated successfully");
+    setUser((prev) => {
+      console.log("Updating user state, prev:", prev);
+      return prev
+        ? {
+            ...prev,
+            unlocked_levels: updatedLevels,
+            subscription: "paid",
+          }
+        : prev;
+    });
+
+    return true;
+  };
   // Access Check
   const hasUnlockedLevel =
     (

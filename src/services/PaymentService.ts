@@ -13,24 +13,25 @@ export async function createPayment({
   provider: string;
   phone: string;
 }) {
-  const { data, error } = await supabase
-    .from("payments")
-    .insert({
+  const response = await supabase.functions.invoke("create-payment", {
+    body: JSON.stringify({
       user_id: userId,
       level_id: levelId,
       amount,
       provider,
       phone,
-      status: "pending",
-      transaction_ref: crypto.randomUUID(),
-    })
-    .select()
-    .single();
+    }),
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
 
-  if (error) {
-    console.error("Payment creation error:", error);
-    throw error;
+  if (response.error) {
+    console.error("Payment creation error:", response.error);
+    throw new Error(
+      `Payment creation failed: ${response.error.message}`
+    );
   }
 
-  return data;
+  return response.data;
 }
