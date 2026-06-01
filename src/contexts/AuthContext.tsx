@@ -1,6 +1,15 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
-import { UserRole, SubscriptionType } from "@/types";
+import {
+  UserRole,
+  SubscriptionType,
+} from "@/types";
 import { supabase } from "@/lib/supabaseClient";
 
 interface ExtendedUser {
@@ -9,55 +18,128 @@ interface ExtendedUser {
   name: string;
   role: UserRole;
   subscription: SubscriptionType;
+  unlocked_levels: string[];
 }
 
 interface AuthContextType {
   user: ExtendedUser | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; role?: UserRole }>;
-  register: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
+
+  login: (
+    email: string,
+    password: string
+  ) => Promise<{
+    success: boolean;
+    error?: string;
+    role?: UserRole;
+  }>;
+
+  register: (
+    email: string,
+    password: string,
+    name: string
+  ) => Promise<{
+    success: boolean;
+    error?: string;
+  }>;
+
   logout: () => Promise<void>;
-  upgradeSubscription: () => Promise<boolean>;
+
+  // unlock selected package
+  upgradeSubscription: (
+    levelId: string
+  ) => Promise<boolean>;
+
+  hasUnlockedLevel: (
+    levelId: string
+  ) => boolean;
+
   isAdmin: boolean;
   isPaid: boolean;
   canAccessPremium: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext =
+  createContext<
+    AuthContextType | undefined
+  >(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<ExtendedUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+export function AuthProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const [user, setUser] =
+    useState<ExtendedUser | null>(
+      null
+    );
 
-  const fetchUserProfile = async (supabaseUser: SupabaseUser): Promise<ExtendedUser | null> => {
+  const [isLoading, setIsLoading] =
+    useState(true);
+
+  // Fetch Profile
+  const fetchUserProfile = async (
+    supabaseUser: SupabaseUser
+  ): Promise<ExtendedUser | null> => {
     try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('name, role, subscription')
-        .eq('id', supabaseUser.id)
-        .single();
+      const { data, error } =
+        await supabase
+          .from("user_profiles")
+          .select(
+            `
+            name,
+            role,
+            subscription,
+            unlocked_levels
+          `
+          )
+          .eq("id", supabaseUser.id)
+          .single();
 
       if (error) {
-        console.error('Profile fetch error:', error);
-        // Handle case where table does not exist
-        if (error.code === '42P01') {
+        console.error(
+          "Profile fetch error:",
+          error
+        );
+
+        // table missing
+        if (
+          error.code === "42P01"
+        ) {
           return {
             id: supabaseUser.id,
-            email: supabaseUser.email!,
-            name: supabaseUser.email?.split('@')[0] || "User",
-            role: "student" as UserRole,
-            subscription: "free" as SubscriptionType,
+            email:
+              supabaseUser.email!,
+            name:
+              supabaseUser.email?.split(
+                "@"
+              )[0] || "User",
+            role:
+              "student" as UserRole,
+            subscription:
+              "free" as SubscriptionType,
+            unlocked_levels: [],
           };
         }
 
-        // Handle PostgREST 'no rows' when using .single() (PGRST116)
-        if (error.code === 'PGRST116') {
+        // no row
+        if (
+          error.code ===
+          "PGRST116"
+        ) {
           return {
             id: supabaseUser.id,
-            email: supabaseUser.email!,
-            name: supabaseUser.email?.split('@')[0] || "User",
-            role: "student" as UserRole,
-            subscription: "free" as SubscriptionType,
+            email:
+              supabaseUser.email!,
+            name:
+              supabaseUser.email?.split(
+                "@"
+              )[0] || "User",
+            role:
+              "student" as UserRole,
+            subscription:
+              "free" as SubscriptionType,
+            unlocked_levels: [],
           };
         }
 
@@ -66,61 +148,117 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return {
         id: supabaseUser.id,
-        email: supabaseUser.email!,
-        name: data.name || supabaseUser.email?.split('@')[0] || "User",
-        role: data.role || "student",
-        subscription: data.subscription || "free",
+        email:
+          supabaseUser.email!,
+        name:
+          data.name ||
+          supabaseUser.email?.split(
+            "@"
+          )[0] ||
+          "User",
+        role:
+          data.role || "student",
+        subscription:
+          data.subscription ||
+          "free",
+        unlocked_levels:
+          data.unlocked_levels ||
+          [],
       };
     } catch (err) {
-      console.error('fetchUserProfile catch:', err);
+      console.error(
+        "fetchUserProfile catch:",
+        err
+      );
       return null;
     }
   };
 
+  // Auth Init
   useEffect(() => {
     let mounted = true;
 
-    // Initial session check
-    const initializeAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
+    const initializeAuth =
+      async () => {
+        try {
+          const {
+            data: { session },
+          } =
+            await supabase.auth.getSession();
 
-        if (session?.user && mounted) {
-          const profile = await fetchUserProfile(session.user);
-          if (profile) setUser(profile);
-        } else if (mounted) {
-          setUser(null);
+          if (
+            session?.user &&
+            mounted
+          ) {
+            const profile =
+              await fetchUserProfile(
+                session.user
+              );
+
+            if (profile)
+              setUser(profile);
+          } else if (
+            mounted
+          ) {
+            setUser(null);
+          }
+        } catch (err) {
+          console.error(
+            "Init error:",
+            err
+          );
+        } finally {
+          if (mounted)
+            setIsLoading(false);
         }
-      } catch (err) {
-        console.error("Init error:", err);
-      } finally {
-        if (mounted) setIsLoading(false);
-      }
-    };
+      };
 
     initializeAuth();
 
-    // Listener - NO async callback (this fixes the deadlock)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log("Auth event:", event, "User present:", !!session?.user);
+    const {
+      data: {
+        subscription,
+      },
+    } =
+      supabase.auth.onAuthStateChange(
+        (
+          event,
+          session
+        ) => {
+          console.log(
+            "Auth event:",
+            event
+          );
 
-        if (!mounted) return;
+          if (!mounted)
+            return;
 
-        if (session?.user) {
-          // Fetch profile without making the callback async
-          fetchUserProfile(session.user).then((profile) => {
-            if (profile && mounted) {
-              setUser(profile);
-            }
-          });
-        } else if (mounted) {
-          setUser(null);
+          if (
+            session?.user
+          ) {
+            fetchUserProfile(
+              session.user
+            ).then(
+              (
+                profile
+              ) => {
+                if (
+                  profile &&
+                  mounted
+                ) {
+                  setUser(
+                    profile
+                  );
+                }
+              }
+            );
+          } else {
+            setUser(null);
+          }
+
+          setIsLoading(false);
         }
-
-        setIsLoading(false);
-      }
-    );
+      );
 
     return () => {
       mounted = false;
@@ -128,83 +266,287 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const login = async (email: string, password: string) => {
+  // Login
+  const login = async (
+    email: string,
+    password: string
+  ) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) return { success: false, error: error.message };
+      const {
+        data,
+        error,
+      } =
+        await supabase.auth.signInWithPassword(
+          {
+            email,
+            password,
+          }
+        );
 
-      if (data?.user) {
-        const profile = await fetchUserProfile(data.user);
-        if (profile) setUser(profile);
-        return { success: true, role: profile?.role || 'student' };
+      if (error) {
+        return {
+          success: false,
+          error:
+            error.message,
+        };
       }
 
-      return { success: true };
-    } catch (err) {
-      return { success: false, error: "Login failed" };
-    }
-  };
+      if (
+        data?.user
+      ) {
+        const profile =
+          await fetchUserProfile(
+            data.user
+          );
 
-  const register = async (email: string, password: string, name: string) => {
-    try {
-      const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error) return { success: false, error: error.message };
+        if (profile)
+          setUser(
+            profile
+          );
 
-      if (data.user) {
-        const { error } = await supabase
-          .from('user_profiles')
-          .insert({ id: data.user.id, email: data.user.email, name, role: 'student', subscription: 'free' });
-        if (error) console.error(error);
+        return {
+          success: true,
+          role:
+            profile?.role ||
+            "student",
+        };
       }
-      return { success: true };
-    } catch (err) {
-      return { success: false, error: "Registration failed" };
+
+      return {
+        success: true,
+      };
+    } catch {
+      return {
+        success: false,
+        error:
+          "Login failed",
+      };
     }
   };
 
-  const logout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-  };
+  // Register
+  const register = async (
+    email: string,
+    password: string,
+    name: string
+  ) => {
+    try {
+      const {
+        data,
+        error,
+      } =
+        await supabase.auth.signUp(
+          {
+            email,
+            password,
+          }
+        );
 
-  const upgradeSubscription = async (): Promise<boolean> => {
-    if (!user) return false;
-    const { error } = await supabase
-      .from('user_profiles')
-      .update({ subscription: 'paid' })
-      .eq('id', user.id);
+      if (error) {
+        return {
+          success: false,
+          error:
+            error.message,
+        };
+      }
 
-    if (error) {
-      console.error(error);
-      return false;
+      if (
+        data.user
+      ) {
+        const {
+          error:
+            profileError,
+        } =
+          await supabase
+            .from(
+              "user_profiles"
+            )
+            .insert({
+              id:
+                data.user.id,
+              email:
+                data.user
+                  .email,
+              name,
+              role:
+                "student",
+              subscription:
+                "free",
+              unlocked_levels:
+                [],
+            });
+
+        if (
+          profileError
+        ) {
+          console.error(
+            profileError
+          );
+        }
+      }
+
+      return {
+        success: true,
+      };
+    } catch {
+      return {
+        success: false,
+        error:
+          "Registration failed",
+      };
     }
-    setUser(prev => prev ? { ...prev, subscription: 'paid' } : null);
-    return true;
   };
 
-  const value: AuthContextType = {
-    user,
-    isLoading,
-    login,
-    register,
-    logout,
-    upgradeSubscription,
-    isAdmin: user?.role === 'admin',
-    isPaid: user?.subscription === 'paid',
-    canAccessPremium: user?.subscription === 'paid' || user?.role === 'admin',
-  };
+  // Logout
+  const logout =
+    async () => {
+      await supabase.auth.signOut();
+      setUser(null);
+    };
+
+  // Unlock Package
+  const upgradeSubscription =
+    async (
+      levelId: string
+    ): Promise<boolean> => {
+      if (!user)
+        return false;
+
+      const current =
+        user.unlocked_levels ||
+        [];
+
+      // already owned
+      if (
+        current.includes(
+          levelId
+        )
+      ) {
+        return true;
+      }
+
+      const updatedLevels =
+        [
+          ...current,
+          levelId,
+        ];
+
+      const {
+        error,
+      } =
+        await supabase
+          .from(
+            "user_profiles"
+          )
+          .update({
+            unlocked_levels:
+              updatedLevels,
+            subscription:
+              "paid",
+          })
+          .eq(
+            "id",
+            user.id
+          );
+
+      if (error) {
+        console.error(
+          error
+        );
+        return false;
+      }
+
+      setUser(
+        (
+          prev
+        ) =>
+          prev
+            ? {
+                ...prev,
+                subscription:
+                  "paid",
+                unlocked_levels:
+                  updatedLevels,
+              }
+            : null
+      );
+
+      return true;
+    };
+
+  // Access Check
+  const hasUnlockedLevel =
+    (
+      levelId: string
+    ) => {
+      if (!user)
+        return false;
+
+      // beginner always free
+      if (
+        levelId.toLowerCase() ===
+        "beginner"
+      ) {
+        return true;
+      }
+
+      return (
+        user.unlocked_levels?.includes(
+          levelId
+        ) ||
+        user.role ===
+          "admin"
+      );
+    };
+
+  const value: AuthContextType =
+    {
+      user,
+      isLoading,
+      login,
+      register,
+      logout,
+      upgradeSubscription,
+      hasUnlockedLevel,
+
+      isAdmin:
+        user?.role ===
+        "admin",
+
+      isPaid:
+        user?.subscription ===
+        "paid",
+
+      canAccessPremium:
+        user?.subscription ===
+          "paid" ||
+        user?.role ===
+          "admin",
+    };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={value}
+    >
       {children}
     </AuthContext.Provider>
   );
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+  const context =
+    useContext(
+      AuthContext
+    );
+
+  if (
+    context ===
+    undefined
+  ) {
+    throw new Error(
+      "useAuth must be used within an AuthProvider"
+    );
   }
+
   return context;
 }
