@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -10,16 +10,27 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const { login } = useAuth();
+  const { login, user, isLoading } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!isLoading && user) {
+      navigate(user.role === "admin" ? "/admin" : "/dashboard", { replace: true });
+    }
+  }, [isLoading, user, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     if (!email || !password) { setError("Please fill in all fields"); return; }
-    const success = login(email, password);
-    if (success) navigate("/dashboard");
-    else setError("Invalid email or password");
+
+    const result = await login(email, password);
+
+    if (result.success) {
+      navigate(result.role === "admin" ? "/admin" : "/dashboard");
+    } else {
+      setError(result.error || "Invalid email or password");
+    }
   };
 
   return (

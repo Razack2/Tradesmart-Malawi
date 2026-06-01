@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useCourses } from "@/contexts/CourseContext";
 import { Lesson, Module, Course } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ export default function ManageLessons() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [modules, setModules] = useState<Module[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
+  const { refreshContent } = useCourses();
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -177,6 +179,7 @@ export default function ManageLessons() {
       }
 
       await fetchLessons(); // Refresh the list
+      await refreshContent();
       resetForm();
     } catch (error) {
       console.error('Error saving lesson:', error);
@@ -194,6 +197,7 @@ export default function ManageLessons() {
 
         if (error) throw error;
         await fetchLessons(); // Refresh the list
+        await refreshContent();
       } catch (error) {
         console.error('Error deleting lesson:', error);
         alert('Failed to delete lesson. Please try again.');

@@ -14,12 +14,13 @@ interface ExtendedUser {
 interface AuthContextType {
   user: ExtendedUser | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; role?: UserRole }>;
   register: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   upgradeSubscription: () => Promise<boolean>;
   isAdmin: boolean;
   isPaid: boolean;
+  canAccessPremium: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,6 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         console.error('Profile fetch error:', error);
+        // Handle case where table does not exist
         if (error.code === '42P01') {
           return {
             id: supabaseUser.id,
@@ -47,6 +49,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             subscription: "free" as SubscriptionType,
           };
         }
+
+        // Handle PostgREST 'no rows' when using .single() (PGRST116)
+        if (error.code === 'PGRST116') {
+          return {
+            id: supabaseUser.id,
+            email: supabaseUser.email!,
+            name: supabaseUser.email?.split('@')[0] || "User",
+            role: "student" as UserRole,
+            subscription: "free" as SubscriptionType,
+          };
+        }
+
         return null;
       }
 
@@ -116,8 +130,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) return { success: false, error: error.message };
+
+      if (data?.user) {
+        const profile = await fetchUserProfile(data.user);
+        if (profile) setUser(profile);
+        return { success: true, role: profile?.role || 'student' };
+      }
+
       return { success: true };
     } catch (err) {
       return { success: false, error: "Login failed" };
@@ -130,10 +151,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) return { success: false, error: error.message };
 
       if (data.user) {
-        await supabase
+        const { error } = await supabase
           .from('user_profiles')
-          .insert({ id: data.user.id, email: data.user.email, name, role: 'student', subscription: 'free' })
-          .catch(console.error);
+          .insert({ id: data.user.id, email: data.user.email, name, role: 'student', subscription: 'free' });
+        if (error) console.error(error);
       }
       return { success: true };
     } catch (err) {
@@ -170,6 +191,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     upgradeSubscription,
     isAdmin: user?.role === 'admin',
     isPaid: user?.subscription === 'paid',
+    canAccessPremium: user?.subscription === 'paid' || user?.role === 'admin',
   };
 
   return (

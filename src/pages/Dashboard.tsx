@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
 export default function Dashboard() {
-  const { user, isPaid } = useAuth();
+  const { user, isPaid, isAdmin } = useAuth();
   const { levels } = useCourses();
   const { getLessonProgress } = useProgress();
 
@@ -15,12 +15,42 @@ export default function Dashboard() {
     l.courses.flatMap((c) => c.modules.flatMap((m) => m.lessons))
   );
   const accessibleLessons = levels
-    .filter((l) => !l.isPaid || isPaid)
+    .filter((l) => !l.isPaid || isPaid || isAdmin)
     .flatMap((l) => l.courses.flatMap((c) => c.modules.flatMap((m) => m.lessons)));
 
   const overallProgress = getLessonProgress(accessibleLessons.map((l) => l.id));
 
   const levelIcons = { Beginner: BookOpen, Intermediate: TrendingUp, Expert: Crown };
+
+  const levelStyles = {
+    Beginner: {
+      iconBg: "bg-emerald-500/10",
+      iconText: "text-emerald-500",
+      badge: "text-emerald-600",
+      border: "border-emerald-200/50",
+    },
+    Intermediate: {
+      iconBg: "bg-amber-500/10",
+      iconText: "text-amber-500",
+      badge: "text-amber-600",
+      border: "border-amber-200/50",
+    },
+    Expert: {
+      iconBg: "bg-red-500/10",
+      iconText: "text-red-500",
+      badge: "text-red-600",
+      border: "border-red-200/50",
+    },
+    default: {
+      iconBg: "bg-slate-100",
+      iconText: "text-slate-700",
+      badge: "text-slate-600",
+      border: "border-border",
+    },
+  } as const;
+
+  const getLevelStyles = (levelName: string) =>
+    levelStyles[levelName as keyof typeof levelStyles] || levelStyles.default;
 
   return (
     <div className="p-6 max-w-6xl mx-auto animate-fade-in">
@@ -44,7 +74,7 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {!isPaid && (
+      {!isPaid && !isAdmin && (
         <div className="gradient-gold rounded-xl p-6 mb-8 flex items-center justify-between">
           <div>
             <h3 className="text-lg font-display font-bold text-accent-foreground flex items-center gap-2">
@@ -65,12 +95,21 @@ export default function Dashboard() {
       <div className="grid md:grid-cols-3 gap-6">
         {levels.map((level) => {
           const Icon = levelIcons[level.name] || BookOpen;
-          const locked = level.isPaid && !isPaid;
+          const levelIsPremium = level.isPaid || level.name !== "Beginner";
+          const locked = levelIsPremium && !isPaid && !isAdmin;
           const lessonIds = level.courses.flatMap((c) =>
             c.modules.flatMap((m) => m.lessons.map((l) => l.id))
           );
           const progress = locked ? 0 : getLessonProgress(lessonIds);
           const courseCount = level.courses.length;
+          const priceLabel = level.isPaid
+            ? level.name === "Intermediate"
+              ? "MK15,000"
+              : level.name === "Expert"
+              ? "MK30,000"
+              : "Premium"
+            : "Free";
+          const badgeClass = level.isPaid ? "text-trading-gold" : getLevelStyles(level.name).badge;
 
           return (
             <Link
@@ -79,28 +118,26 @@ export default function Dashboard() {
               className="group"
             >
               <div
-                className={`bg-card rounded-xl p-6 shadow-card border border-border hover:shadow-elevated transition-all ${
-                  locked ? "opacity-75" : ""
+                className={`bg-card rounded-xl p-6 shadow-card border hover:shadow-elevated transition-all ${
+                  locked ? "opacity-75 border-border" : getLevelStyles(level.name).border
                 }`}
               >
                 <div className="flex items-center justify-between mb-4">
                   <div
                     className={`h-10 w-10 rounded-lg flex items-center justify-center ${
-                      locked ? "bg-muted" : "gradient-primary"
+                      locked ? "bg-muted" : getLevelStyles(level.name).iconBg
                     }`}
                   >
                     {locked ? (
                       <Lock className="h-5 w-5 text-muted-foreground" />
                     ) : (
-                      <Icon className="h-5 w-5 text-primary-foreground" />
+                      <Icon
+                        className={`h-5 w-5 ${getLevelStyles(level.name).iconText}`}
+                      />
                     )}
                   </div>
-                  <span
-                    className={`text-xs font-bold uppercase ${
-                      level.isPaid ? "text-trading-gold" : "text-trading-green"
-                    }`}
-                  >
-                    {level.isPaid ? "Premium" : "Free"}
+                  <span className={`text-xs font-bold uppercase ${badgeClass}`}>
+                    {priceLabel}
                   </span>
                 </div>
                 <h3 className="text-lg font-display font-semibold text-card-foreground mb-1">

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useCourses } from "@/contexts/CourseContext";
 import { Course, LevelType } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,7 @@ export default function ManageCourses() {
   const [description, setDescription] = useState("");
   const [levelId, setLevelId] = useState("");
   const [category, setCategory] = useState<"crypto" | "forex">("forex");
+  const { refreshContent } = useCourses();
 
   // Fetch levels and courses from Supabase
   useEffect(() => {
@@ -64,7 +66,7 @@ export default function ManageCourses() {
   const createDefaultLevels = async () => {
     const defaultLevels = [
       { name: "Beginner", isPaid: false, description: "Perfect for newcomers" },
-      { name: "Intermediate", isPaid: false, description: "For those with basic knowledge" },
+      { name: "Intermediate", isPaid: true, description: "For those with basic knowledge" },
       { name: "Expert", isPaid: true, description: "Advanced strategies and techniques" }
     ];
 
@@ -195,6 +197,7 @@ export default function ManageCourses() {
       }
 
       await fetchCourses(); // Refresh the list
+      await refreshContent();
       resetForm();
     } catch (error) {
       console.error('Error saving course:', error);
@@ -212,6 +215,7 @@ export default function ManageCourses() {
 
         if (error) throw error;
         await fetchCourses(); // Refresh the list
+        await refreshContent();
       } catch (error) {
         console.error('Error deleting course:', error);
         alert('Failed to delete course. Please try again.');

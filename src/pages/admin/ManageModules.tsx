@@ -1,42 +1,164 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCourses } from "@/contexts/CourseContext";
-import { Module } from "@/types";
+import { Course, Module } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Pencil, Trash2, X, Check } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function ManageModules() {
-  const { getAllCourses, getAllModules, addModule, updateModule, deleteModule } = useCourses();
-  const courses = getAllCourses();
-  const modules = getAllModules();
-
+  const { refreshContent } = useCourses();
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [modules, setModules] = useState<Module[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [courseId, setCourseId] = useState("");
   const [order, setOrder] = useState(1);
 
-  const resetForm = () => { setTitle(""); setCourseId(""); setOrder(1); setShowForm(false); setEditId(null); };
+  useEffect(() => {
+    fetchCourses();
+    fetchModules();
+  }, []);
+
+  const fetchCourses = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('courses')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setCourses(
+        (data || []).map((course) => ({
+          id: course.id,
+          title: course.title,
+          description: course.description,
+          levelId: course.level,
+          category: course.category || "forex",
+          modules: [],
+          thumbnail: course.thumbnail,
+        }))
+      );
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+    }
+  };
+
+  const fetchModules = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('modules')
+        .select('*, lessons:lessons(id)')
+        .order('order_index', { ascending: true });
+
+      if (error) throw error;
+
+      setModules(
+        (data || []).map((module) => ({
+          id: module.id,
+          title: module.title,
+          courseId: module.course_id,
+          lessons: module.lessons || [],
+          order: module.order_index,
+          description: module.description,
+          course_id: module.course_id,
+          order_index: module.order_index,
+        }))
+      );
+    } catch (error) {
+      console.error('Error fetching modules:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setTitle("");
+    setCourseId("");
+    setOrder(1);
+    setShowForm(false);
+    setEditId(null);
+  };
 
   const handleEdit = (m: Module) => {
-    setEditId(m.id); setTitle(m.title); setCourseId(m.courseId); setOrder(m.order); setShowForm(true);
+    setEditId(m.id);
+    setTitle(m.title);
+    setCourseId(m.courseId);
+    setOrder(m.order);
+    setShowForm(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!title || !courseId) return;
-    if (editId) {
-      updateModule(editId, { title, courseId, order });
-    } else {
-      addModule({ id: `mod-${Date.now()}`, title, courseId, order, lessons: [] });
+
+    try {
+      if (editId) {
+        const { error } = await supabase
+          .from('modules')
+          .update({
+            title,
+            course_id: courseId,
+            order_index: order,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', editId);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('modules')
+          .insert({
+            title,
+            course_id: courseId,
+            order_index: order,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+
+        if (error) throw error;
+      }
+
+      await fetchModules();
+      await refreshContent();
+      resetForm();
+    } catch (error) {
+      console.error('Error saving module:', error);
+      alert('Failed to save module. Please try again.');
     }
-    resetForm();
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Delete this module and all its lessons?")) deleteModule(id);
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this module and all its lessons?")) return;
+
+    try {
+      const { error } = await supabase
+        .from('modules')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      await fetchModules();
+      await refreshContent();
+    } catch (error) {
+      console.error('Error deleting module:', error);
+      alert('Failed to delete module. Please try again.');
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-muted-foreground">Loading modules...</div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -60,7 +182,9 @@ export default function ManageModules() {
               <Select value={courseId} onValueChange={setCourseId}>
                 <SelectTrigger><SelectValue placeholder="Select course" /></SelectTrigger>
                 <SelectContent>
-                  {courses.map((c) => (<SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>))}
+                  {courses.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

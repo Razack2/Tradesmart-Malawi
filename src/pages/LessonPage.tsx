@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 export default function LessonPage() {
   const { lessonId } = useParams<{ lessonId: string }>();
   const { getLessonById, getModuleById, getCourseById, getLevelById } = useCourses();
-  const { isPaid } = useAuth();
+  const { isPaid, isAdmin } = useAuth();
   const { isCompleted, markComplete } = useProgress();
 
   const lesson = getLessonById(lessonId || "");
@@ -19,7 +19,7 @@ export default function LessonPage() {
   const course = mod ? getCourseById(mod.courseId) : undefined;
   const level = course ? getLevelById(course.levelId) : undefined;
 
-  if (level?.isPaid && !isPaid) return <Navigate to="/upgrade" replace />;
+  if (level?.isPaid && !isPaid && !isAdmin) return <Navigate to="/upgrade" replace />;
 
   const done = isCompleted(lesson.id);
 

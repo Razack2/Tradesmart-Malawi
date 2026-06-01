@@ -19,7 +19,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const LevelPage = lazy(() => import("./pages/LevelPage"));
 const CoursePage = lazy(() => import("./pages/CoursePage"));
 const LessonPage = lazy(() => import("./pages/LessonPage"));
-const UpgradePage = lazy(() => import("./pages/UpgradePage"));
+const MakePaymentPage = lazy(() => import("./pages/PaymentPage"));
 const AdminPanel = lazy(() => import("./pages/AdminPanel"));
 const ManageCourses = lazy(() => import("./pages/admin/ManageCourses"));
 const ManageModules = lazy(() => import("./pages/admin/ManageModules"));
@@ -60,7 +60,7 @@ const App = () => (
                     <Route path="/level/:levelId" element={<LevelPage />} />
                     <Route path="/course/:courseId" element={<CoursePage />} />
                     <Route path="/lesson/:lessonId" element={<LessonPage />} />
-                    <Route path="/upgrade" element={<UpgradePage />} />
+                    <Route path="/upgrade" element={<MakePaymentPage />} />
 
                     {/* Admin routes */}
                     <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>}>

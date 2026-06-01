@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useCourses } from "@/contexts/CourseContext";
 import { QuizQuestion, Lesson, Module, Course } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,7 @@ export default function ManageQuizzes() {
   const [modules, setModules] = useState<Module[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [quizQuestions, setQuizQuestions] = useState<QuizItem[]>([]);
+  const { refreshContent } = useCourses();
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -260,6 +262,7 @@ export default function ManageQuizzes() {
       }
 
       await fetchQuizzes(); // Refresh the list
+      await refreshContent();
       resetForm();
     } catch (error) {
       console.error('Error saving quiz question:', error);

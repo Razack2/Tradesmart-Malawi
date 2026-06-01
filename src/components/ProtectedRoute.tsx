@@ -48,13 +48,13 @@ export function PaidContentGuard({ children, levelIsPaid }: {
   children: ReactNode;
   levelIsPaid: boolean
 }) {
-  const { isPaid, isLoading } = useAuth();
+  const { isPaid, isAdmin, isLoading } = useAuth();
 
   if (isLoading) {
     return <Loading />;
   }
 
-  if (levelIsPaid && !isPaid) {
+  if (levelIsPaid && !isPaid && !isAdmin) {
     return <Navigate to="/upgrade" replace />;
   }
 
