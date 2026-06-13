@@ -13,6 +13,7 @@ import {
 import { supabase } from "@/lib/supabaseClient";
 
 interface ExtendedUser {
+  has_active_subscription: boolean;
   id: string;
   email: string;
   name: string;
@@ -121,6 +122,7 @@ export function AuthProvider({
             subscription:
               "free" as SubscriptionType,
             unlocked_levels: [],
+            has_active_subscription: false,
           };
         }
 
@@ -142,6 +144,7 @@ export function AuthProvider({
             subscription:
               "free" as SubscriptionType,
             unlocked_levels: [],
+            has_active_subscription: false,
           };
         }
 
@@ -166,6 +169,9 @@ export function AuthProvider({
         unlocked_levels:
           data.unlocked_levels ||
           [],
+        has_active_subscription:
+          // prefer explicit field from DB if present, otherwise default to false
+          (data as any)?.has_active_subscription || false,
       };
     } catch (err) {
       console.error(

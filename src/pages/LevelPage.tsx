@@ -14,30 +14,19 @@ export default function LevelPage() {
   const { getLessonProgress } = useProgress();
 
   const level = getLevelById(levelId || "");
-
-  if (!level) {
-    return <Navigate to="/dashboard" replace />;
-  }
+  if (!level) return <Navigate to="/dashboard" replace />;
 
   // =========================
-  // ACCESS CONTROL (FIXED)
+  // SUBSCRIPTION CHECK
   // =========================
   const isBeginner = level.name === "Beginner";
 
-  const isUnlocked =
-    isAdmin ||
-    isBeginner ||
-    user?.unlocked_levels?.includes(level.id);
+  const hasSubscription =
+    isAdmin || user?.has_active_subscription === true;
 
-  // ❌ BLOCK ACCESS
+  const isUnlocked = isBeginner || hasSubscription;
+
   if (!isUnlocked) {
-    const price =
-      level.name === "Intermediate"
-        ? "MK15,000"
-        : level.name === "Expert"
-        ? "MK30,000"
-        : "Premium";
-
     return (
       <div className="p-6 max-w-2xl mx-auto animate-fade-in">
         <Button variant="ghost" size="sm" asChild className="mb-4">
@@ -51,25 +40,19 @@ export default function LevelPage() {
           <Lock className="h-12 w-12 mx-auto mb-4 text-red-500" />
 
           <h1 className="text-2xl font-bold mb-2">
-            Upgrade Required
+            Premium Subscription Required
           </h1>
 
-          <p className="text-3xl font-bold text-red-600 mb-3">
-            {price}
+          <p className="text-3xl font-bold text-primary mb-3">
+            MK5,000 / Month
           </p>
 
           <p className="text-muted-foreground mb-4">
-            You need to unlock the{" "}
-            <span className="font-semibold">
-              {level.name}
-            </span>{" "}
-            package to access this content.
+            Subscribe to Premium to continue learning advanced content.
           </p>
 
           <Button asChild>
-            <Link to={`/upgrade`}>
-              Upgrade Now
-            </Link>
+            <Link to="/upgrade">Subscribe Now</Link>
           </Button>
         </div>
       </div>
@@ -77,7 +60,7 @@ export default function LevelPage() {
   }
 
   // =========================
-  // LEVEL STYLES
+  // STYLES
   // =========================
   const levelStyles =
     level.name === "Beginner"
@@ -86,16 +69,10 @@ export default function LevelPage() {
           badge: "bg-green-100 text-green-700",
           card: "bg-green-50 border-green-200 hover:border-green-400",
         }
-      : level.name === "Intermediate"
-      ? {
-          text: "text-amber-600",
-          badge: "bg-amber-100 text-amber-700",
-          card: "bg-amber-50 border-amber-200 hover:border-amber-400",
-        }
       : {
-          text: "text-red-600",
-          badge: "bg-red-100 text-red-700",
-          card: "bg-red-50 border-red-200 hover:border-red-400",
+          text: "text-blue-600",
+          badge: "bg-blue-100 text-blue-700",
+          card: "bg-blue-50 border-blue-200 hover:border-blue-400",
         };
 
   return (

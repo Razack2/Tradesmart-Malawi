@@ -1,3 +1,5 @@
+import { ReactNode } from "react";
+
 export type UserRole = "admin" | "student";
 export type SubscriptionType = "free" | "paid";
 export type LevelType = "Beginner" | "Intermediate" | "Expert";
@@ -17,6 +19,7 @@ export interface QuizQuestion {
 }
 
 export interface Lesson {
+  description: ReactNode;
   id: string;
   title: string;
   content: string;

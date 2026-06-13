@@ -1,16 +1,18 @@
 import {
   LayoutDashboard,
   BookOpen,
-  TrendingUp,
   Crown,
   LogOut,
   Shield,
   Zap,
+  Lock,
 } from "lucide-react";
+
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCourses } from "@/contexts/CourseContext";
 import { useNavigate } from "react-router-dom";
+
 import {
   Sidebar,
   SidebarContent,
@@ -23,6 +25,7 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
+
 import { Button } from "@/components/ui/button";
 
 const adminItems = [
@@ -41,18 +44,14 @@ export function AppSidebar() {
     navigate("/");
   };
 
-  const getLevelColor = (levelName: string) => {
-    switch (levelName.toLowerCase()) {
-      case "beginner":
-        return "text-green-500";
-      case "intermediate":
-        return "text-amber-500";
-      case "expert":
-        return "text-red-500";
-      default:
-        return "text-sidebar-foreground";
-    }
-  };
+  // =========================
+  // SUBSCRIPTION STATE
+  // =========================
+  const hasSubscription =
+    isAdmin || user?.has_active_subscription === true;
+
+  const isBeginner = (name: string) =>
+    name.toLowerCase() === "beginner";
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
@@ -62,11 +61,11 @@ export function AppSidebar() {
             <div className="px-3 pb-4 mb-2 border-b border-sidebar-border">
               <div className="flex items-center gap-2">
                 <div className="h-8 w-8 rounded-lg gradient-primary flex items-center justify-center">
-                  <TrendingUp className="h-4 w-4 text-primary-foreground" />
+                  <Zap className="h-4 w-4 text-primary-foreground" />
                 </div>
 
                 <div>
-                  <p className="text-sm font-display font-bold text-sidebar-foreground">
+                  <p className="text-sm font-bold">
                     TradeSmart
                   </p>
                   <p className="text-xs text-sidebar-foreground/60">
@@ -96,32 +95,47 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              {/* Levels */}
+              {/* LEVELS (ONLY BEGINNER + PREMIUM) */}
               {levels.map((level) => {
-                const iconMap = {
-                  Beginner: BookOpen,
-                  Intermediate: TrendingUp,
-                  Expert: Crown,
-                } as const;
-
-                const LevelIcon =
-                  iconMap[level.name as keyof typeof iconMap] || BookOpen;
+                const locked =
+                  !isBeginner(level.name) && !hasSubscription;
 
                 return (
-                  <SidebarMenuItem key={level.name}>
+                  <SidebarMenuItem key={level.id}>
                     <SidebarMenuButton asChild>
                       <NavLink
-                        to={`/level/${level.id}`}
+                        to={locked ? "/upgrade" : `/level/${level.id}`}
                         className="hover:bg-sidebar-accent/50"
                         activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
                       >
-                        <LevelIcon
-                          className={`mr-2 h-4 w-4 ${getLevelColor(level.name)}`}
-                        />
+                        {locked ? (
+                          <Lock className="mr-2 h-4 w-4 text-red-500" />
+                        ) : isBeginner(level.name) ? (
+                          <BookOpen className="mr-2 h-4 w-4 text-green-500" />
+                        ) : (
+                          <Crown className="mr-2 h-4 w-4 text-blue-500" />
+                        )}
 
                         {!collapsed && (
-                          <span className={getLevelColor(level.name)}>
+                          <span
+                            className={
+                              locked
+                                ? "text-red-500"
+                                : isBeginner(level.name)
+                                ? "text-green-500"
+                                : "text-blue-500"
+                            }
+                          >
                             {level.name}
+                          </span>
+                        )}
+
+                        {/* Badge */}
+                        {!collapsed && (
+                          <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                            {isBeginner(level.name)
+                              ? "FREE"
+                              : "PREMIUM"}
                           </span>
                         )}
                       </NavLink>
@@ -130,13 +144,26 @@ export function AppSidebar() {
                 );
               })}
 
-          
-            
+              {/* Upgrade */}
+              {!hasSubscription && !isAdmin && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink to="/upgrade" className="hover:bg-yellow-500/10">
+                      <Zap className="mr-2 h-4 w-4 text-yellow-500" />
+                      {!collapsed && (
+                        <span className="text-yellow-600 font-medium">
+                          Upgrade Premium
+                        </span>
+                      )}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Admin */}
+        {/* ADMIN */}
         {isAdmin && (
           <SidebarGroup>
             <SidebarGroupLabel>Administration</SidebarGroupLabel>
@@ -163,11 +190,11 @@ export function AppSidebar() {
         )}
       </SidebarContent>
 
-      {/* Footer */}
+      {/* FOOTER */}
       <SidebarFooter className="p-3 border-t border-sidebar-border">
         {!collapsed && user && (
           <div className="mb-2 px-1">
-            <p className="text-sm font-medium text-sidebar-foreground truncate">
+            <p className="text-sm font-medium truncate">
               {user.name}
             </p>
 
@@ -175,18 +202,15 @@ export function AppSidebar() {
               {user.email}
             </p>
 
-            {/* Always Free for Students */}
-            {!isAdmin && (
-              <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                Free User
-              </span>
-            )}
-
-            {isAdmin && (
-              <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700">
-                Admin
-              </span>
-            )}
+            <span
+              className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full ${
+                hasSubscription
+                  ? "bg-green-100 text-green-700"
+                  : "bg-slate-100 text-slate-700"
+              }`}
+            >
+              {hasSubscription ? "Premium Active" : "Free Plan"}
+            </span>
           </div>
         )}
 
@@ -194,7 +218,7 @@ export function AppSidebar() {
           variant="ghost"
           size="sm"
           onClick={handleLogout}
-          className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+          className="w-full justify-start"
         >
           <LogOut className="h-4 w-4 mr-2" />
           {!collapsed && "Logout"}

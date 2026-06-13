@@ -2,17 +2,19 @@ import { useParams, Link, Navigate } from "react-router-dom";
 import { useCourses } from "@/contexts/CourseContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProgress } from "@/contexts/ProgressContext";
-import { ArrowLeft, CheckCircle2, Circle, Lock } from "lucide-react";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Circle,
+  Lock,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
 export default function CoursePage() {
   const { courseId } = useParams<{ courseId: string }>();
   const { getCourseById, getLevelById } = useCourses();
-
-  // removed isPaid
-  const { isAdmin } = useAuth();
-
+  const { user, isAdmin } = useAuth();
   const { isCompleted, getLessonProgress } = useProgress();
 
   const course = getCourseById(courseId || "");
@@ -20,55 +22,19 @@ export default function CoursePage() {
 
   const level = getLevelById(course.levelId);
 
-  // Students can only access Beginner
-  const isLockedLevel =
-    !isAdmin &&
-    (level?.name === "Intermediate" || level?.name === "Expert");
+  // =========================
+  // SUBSCRIPTION CHECK
+  // =========================
+  const hasSubscription =
+    isAdmin || user?.has_active_subscription === true;
+
+  const FREE_LESSON_LIMIT = 4;
 
   const allLessonIds = course.modules.flatMap((m) =>
     m.lessons.map((l) => l.id)
   );
 
   const progress = getLessonProgress(allLessonIds);
-
-  // Redirect students to upgrade page for locked levels
-  if (isLockedLevel) {
-    return (
-      <div className="p-6 max-w-2xl mx-auto animate-fade-in">
-        <div className="bg-card border border-border rounded-2xl shadow-card p-8 text-center">
-          <div className="flex justify-center mb-4">
-            <Lock className="h-12 w-12 text-primary" />
-          </div>
-
-          <h1 className="text-2xl font-display font-bold mb-2">
-            Upgrade Required
-          </h1>
-
-          <p className="text-muted-foreground mb-6">
-            You need to upgrade to the{" "}
-            <span className="font-semibold text-primary">
-              {level?.name} Premium Package
-            </span>{" "}
-            to access this level.
-          </p>
-
-          <div className="flex items-center justify-center gap-3">
-            <Button asChild>
-              <Link to="/upgrade">
-                Upgrade to {level?.name}
-              </Link>
-            </Button>
-
-            <Button variant="outline" asChild>
-              <Link to="/dashboard">
-                Back to Dashboard
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="p-6 max-w-4xl mx-auto animate-fade-in">
@@ -79,12 +45,13 @@ export default function CoursePage() {
         </Link>
       </Button>
 
+      {/* HEADER */}
       <div className="mb-8">
         <span className="text-xs font-medium uppercase text-muted-foreground tracking-wide">
           {course.category}
         </span>
 
-        <h1 className="text-3xl font-display font-bold text-foreground mt-1">
+        <h1 className="text-3xl font-bold mt-1">
           {course.title}
         </h1>
 
@@ -103,54 +70,80 @@ export default function CoursePage() {
         </div>
       </div>
 
+      {/* MODULES */}
       <div className="space-y-6">
         {course.modules.map((mod) => (
           <div
             key={mod.id}
-            className="bg-card rounded-xl shadow-card border border-border overflow-hidden"
+            className="bg-card rounded-xl border shadow-card overflow-hidden"
           >
-            <div className="p-4 border-b border-border bg-muted/30">
-              <h2 className="font-display font-semibold text-card-foreground">
-                {mod.title}
-              </h2>
-
+            <div className="p-4 border-b bg-muted/30">
+              <h2 className="font-semibold">{mod.title}</h2>
               <p className="text-xs text-muted-foreground">
                 {mod.lessons.length} lessons
               </p>
             </div>
 
-            <div className="divide-y divide-border">
-              {mod.lessons.map((lesson) => {
+            <div className="divide-y">
+              {mod.lessons.map((lesson, index) => {
                 const done = isCompleted(lesson.id);
 
+                // FREE LIMIT LOGIC
+                const lessonNumber = index + 1;
+
+                const isLocked =
+                  level?.name === "Beginner" &&
+                  !hasSubscription &&
+                  lessonNumber > FREE_LESSON_LIMIT;
+
                 return (
-                  <Link
+                  <div
                     key={lesson.id}
-                    to={`/lesson/${lesson.id}`}
-                    className="flex items-center gap-3 p-4 hover:bg-muted/30 transition-colors"
+                    className="flex items-center gap-3 p-4"
                   >
-                    {done ? (
-                      <CheckCircle2 className="h-5 w-5 text-trading-green flex-shrink-0" />
+                    {isLocked ? (
+                      <>
+                        <Lock className="h-5 w-5 text-red-500" />
+
+                        <span className="text-sm text-muted-foreground">
+                          {lesson.title}
+                        </span>
+
+                        <Button size="sm" className="ml-auto" asChild>
+                          <Link to="/upgrade">
+                            Subscribe
+                          </Link>
+                        </Button>
+                      </>
                     ) : (
-                      <Circle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                    )}
+                      <Link
+                        to={`/lesson/${lesson.id}`}
+                        className="flex items-center gap-3 w-full hover:bg-muted/30 transition"
+                      >
+                        {done ? (
+                          <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        ) : (
+                          <Circle className="h-5 w-5 text-muted-foreground" />
+                        )}
 
-                    <span
-                      className={`text-sm ${
-                        done
-                          ? "text-muted-foreground"
-                          : "text-card-foreground"
-                      }`}
-                    >
-                      {lesson.title}
-                    </span>
+                        <span
+                          className={`text-sm ${
+                            done
+                              ? "text-muted-foreground"
+                              : "text-foreground"
+                          }`}
+                        >
+                          {lesson.title}
+                        </span>
 
-                    {lesson.quiz && lesson.quiz.length > 0 && (
-                      <span className="ml-auto text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                        Quiz
-                      </span>
+                        {lesson.quiz?.length > 0 && (
+                          <span className="ml-auto text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                            Quiz
+                          </span>
+                        )}
+                      </Link>
                     )}
-                  </Link>
+                  </div>
                 );
               })}
             </div>
