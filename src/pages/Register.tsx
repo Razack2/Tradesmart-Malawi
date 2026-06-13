@@ -32,7 +32,7 @@ export default function Register() {
             <div className="h-10 w-10 rounded-lg gradient-primary flex items-center justify-center">
               <TrendingUp className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="text-2xl font-display font-bold text-foreground">TradeSmart</span>
+            <span className="text-2xl font-display font-bold text-foreground">TradeSmart Malawi</span>
           </Link>
           <h1 className="text-2xl font-display font-bold text-foreground">Create your account</h1>
           <p className="text-muted-foreground mt-1">Start your trading journey today</p>

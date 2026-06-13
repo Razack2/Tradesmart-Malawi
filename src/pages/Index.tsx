@@ -54,7 +54,7 @@ export default function Home() {
             <Button size="lg" className="gradient-primary border-0 text-primary-foreground px-8 text-base" asChild>
               <Link to="/register">Start Learning Free <ArrowRight className="ml-2 h-5 w-5" /></Link>
             </Button>
-            <Button size="lg" variant="outline" className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10 px-8 text-base" asChild>
+            <Button size="lg" variant="outline" className="bg-trading-gold-primary  text-primary-foreground hover:bg-primary-foreground/10 px-8 text-base" asChild>
               <Link to="/login">I have an account</Link>
             </Button>
           </div>
