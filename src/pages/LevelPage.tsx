@@ -49,6 +49,7 @@ export default function LevelPage() {
 
           <p className="text-muted-foreground mb-4">
             Subscribe to Premium to continue learning advanced content.
+            and get access to free expert level courses.
           </p>
 
           <Button asChild>

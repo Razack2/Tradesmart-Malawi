@@ -93,7 +93,8 @@ export function AuthProvider({
             name,
             role,
             subscription,
-            unlocked_levels
+            unlocked_levels,
+            has_active_subscription
           `
           )
           .eq("id", supabaseUser.id)
@@ -169,7 +170,7 @@ export function AuthProvider({
         unlocked_levels:
           data.unlocked_levels ||
           [],
-        has_active_subscription:
+            has_active_subscription:
           // prefer explicit field from DB if present, otherwise default to false
           (data as any)?.has_active_subscription || false,
       };
@@ -382,6 +383,7 @@ export function AuthProvider({
                 "free",
               unlocked_levels:
                 [],
+              has_active_subscription: false,
             });
 
         if (
@@ -470,6 +472,96 @@ export function AuthProvider({
 
     return true;
   };
+  
+  // Realtime listener: update local user state when the user_profiles row changes
+  // (so admin actions updating the DB are reflected in the UI immediately)
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel(`user-profile-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "user_profiles",
+        },
+        (payload: any) => {
+          const newData = payload?.new || {};
+          // Only update local state when the update belongs to the current user
+          if (!newData || newData.id !== user.id) return;
+
+          setUser((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  name: newData.name ?? prev.name,
+                  subscription: newData.subscription ?? prev.subscription,
+                  unlocked_levels:
+                    newData.unlocked_levels ?? prev.unlocked_levels,
+                  has_active_subscription:
+                    newData.has_active_subscription ?? prev.has_active_subscription,
+                }
+              : prev
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      // remove the channel on cleanup
+      try {
+        supabase.removeChannel(channel);
+      } catch (err) {
+        // ignore
+      }
+    };
+  }, [user?.id]);
+
+  // Polling fallback: periodically re-fetch the current user's profile
+  // This helps when realtime events don't arrive for some reason.
+  useEffect(() => {
+    if (!user?.id) return;
+
+    let mounted = true;
+    const interval = setInterval(async () => {
+      try {
+        const { data, error } = await supabase
+          .from("user_profiles")
+          .select("name, role, subscription, unlocked_levels, has_active_subscription")
+          .eq("id", user.id)
+          .single();
+
+        if (error) {
+          // ignore transient errors
+          console.debug("Profile polling error:", error.message || error);
+          return;
+        }
+
+        if (!mounted) return;
+
+        setUser((prev) =>
+          prev
+            ? {
+                ...prev,
+                name: data?.name ?? prev.name,
+                role: data?.role ?? prev.role,
+                subscription: data?.subscription ?? prev.subscription,
+                unlocked_levels: data?.unlocked_levels ?? prev.unlocked_levels,
+              }
+            : prev
+        );
+      } catch (err) {
+        console.debug("Profile polling exception:", err);
+      }
+    }, 8000);
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, [user?.id]);
   // Access Check
   const hasUnlockedLevel =
     (

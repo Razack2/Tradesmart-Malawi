@@ -47,8 +47,8 @@ export function AppSidebar() {
   // =========================
   // SUBSCRIPTION STATE
   // =========================
-  const hasSubscription =
-    isAdmin || user?.has_active_subscription === true;
+  const { isPaid } = useAuth();
+  const hasSubscription = isAdmin || isPaid === true;
 
   const isBeginner = (name: string) =>
     name.toLowerCase() === "beginner";

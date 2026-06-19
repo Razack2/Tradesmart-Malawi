@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { createPayment } from "@/services/PaymentService";
+import { createPayment, cancelSubscription } from "@/services/PaymentService";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,7 @@ import {
   Loader2,
   CheckCircle,
   AlertCircle,
+  MessageCircle,
 } from "lucide-react";
 
 type PaymentMethod = "tnm" | "airtel" | null;
@@ -103,8 +104,20 @@ export default function UpgradePage() {
 
       <p className="text-muted-foreground mb-6">
         Unlock all advanced lessons for MK5,000 per month.
+        Get access to expert level content for free after subscribing.
+         You can cancel your subscription at any time.
       </p>
 
+      <p className="text-sm text-muted-foreground mb-6">
+        Please note that this is a monthly subscription. You will be charged MK5,000 every month until you cancel your subscription.
+      </p>
+
+        <div className="text-sm text-muted-foreground mb-6">
+         <p>Payment feature is currently done by contacting the administrator via WhatsApp.
+           You will be provided with a reference number to confirm your payment.</p> 
+          <p>Payment is processed via TNM Mpamba or Airtel Money.</p>
+          <p>After payment, your Premium access will be activated within 24 hours.</p>
+        </div>
       {/* CARD */}
       <div className="border rounded-xl p-6 space-y-4">
         <h2 className="text-xl font-semibold">
@@ -112,7 +125,7 @@ export default function UpgradePage() {
         </h2>
 
         <p className="text-2xl font-bold text-primary">
-          MK5,000 / month
+          MK10,000 / month
         </p>
 
         {/* PAYMENT METHOD */}
@@ -153,7 +166,9 @@ export default function UpgradePage() {
           </label>
 
           <Input
+            maxLength={10}
             value={phone}
+
             onChange={(e) =>
               setPhone(
                 e.target.value.replace(/\D/g, "")
@@ -173,17 +188,41 @@ export default function UpgradePage() {
           )}
         </div>
 
-        <Button
-          onClick={handlePayment}
-          className="w-full"
-          disabled={status === "processing"}
-        >
-          {status === "processing" ? (
-            <Loader2 className="animate-spin" />
-          ) : (
-            "Subscribe Now"
-          )}
-        </Button>
+        {user?.subscription === "paid" ? (
+          <Button
+            onClick={async () => {
+              const ok = window.confirm("Cancel your subscription? This will revoke premium access.");
+              if (!ok) return;
+
+              setStatus("processing");
+              try {
+                await cancelSubscription({ userId: user.id });
+                setStatus("success");
+                // allow polling/realtime to refresh auth state; navigate back to dashboard
+                setTimeout(() => navigate("/dashboard"), 700);
+              } catch (err) {
+                console.error(err);
+                setStatus("failed");
+                setError("Cancellation failed. Try again later.");
+              }
+            }}
+            className="w-full"
+          >
+            Cancel Subscription
+          </Button>
+        ) : (
+          <Button
+            onClick={handlePayment}
+            className="w-full"
+            disabled={status === "processing"}
+          >
+            {status === "processing" ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              "Subscribe Now"
+            )}
+          </Button>
+        )}
       </div>
 
       {/* SUCCESS DIALOG */}
@@ -196,10 +235,13 @@ export default function UpgradePage() {
             </DialogTitle>
 
             <DialogDescription>
-              Your payment request has been created.
-              Once confirmed, your Premium access
-              will be activated.
-            </DialogDescription>
+  Your payment request has been created. Once payment is confirmed, your Premium access will be activated.
+
+  <br />
+  <br />
+
+  You may also contact the administrator to confirm your subscription immediately.
+</DialogDescription>
           </DialogHeader>
 
           {ref && (
@@ -208,12 +250,36 @@ export default function UpgradePage() {
             </div>
           )}
 
-          <Button
-            onClick={() => navigate("/dashboard")}
-            className="w-full"
-          >
-            Go to Dashboard
-          </Button>
+      <div className="space-y-3 mt-4">
+
+  {/* PRIMARY ACTION */}
+  <Button
+    onClick={() => navigate("/dashboard")}
+    className="w-full flex items-center justify-center gap-2"
+  >
+    <CheckCircle className="w-4 h-4" />
+    Go to Dashboard
+  </Button>
+
+  {/* SECONDARY ACTION */}
+  <Button
+    variant="outline"
+    onClick={() =>
+      window.open(
+        `https://wa.me/26589606833?text=${encodeURIComponent(
+          `Hello Admin, I have submitted a subscription request.\nReference: ${ref}\nUser: ${user?.email}`
+        )}`,
+        "_blank"
+      )
+    }
+    className="w-full flex items-center justify-center gap-2 border-green-500 text-green-700 hover:bg-green-50"
+  >
+    <MessageCircle className="w-4 h-4" />
+    Contact Administrator on WhatsApp
+  </Button>
+
+</div>
+
         </DialogContent>
       </Dialog>
 

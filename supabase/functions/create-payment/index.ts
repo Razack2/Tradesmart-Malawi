@@ -9,45 +9,54 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // ✅ Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
-
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    // ALWAYS handle OPTIONS FIRST
+    if (req.method === "OPTIONS") {
+      return new Response("ok", { headers: corsHeaders });
+    }
 
-    const {
-      user_id,
-      amount,
-      provider,
-      phone,
-      subscription_type,
-    } = await req.json();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-    if (
-      !user_id ||
-      !amount ||
-      !provider ||
-      !phone ||
-      !subscription_type
-    ) {
+    if (!supabaseUrl || !serviceKey) {
       return new Response(
-        JSON.stringify({ error: "Missing payment parameters." }),
+        JSON.stringify({ error: "Missing env vars" }),
         {
-          status: 400,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
     }
 
-    const transaction_ref = crypto.randomUUID();
+    const supabase = createClient(supabaseUrl, serviceKey);
+
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON body" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const { user_id, amount, provider, phone, subscription_type } = body;
+
+    if (!user_id || !amount || !provider || !phone || !subscription_type) {
+      return new Response(
+        JSON.stringify({ error: "Missing fields" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const transaction_ref =
+      globalThis.crypto?.randomUUID?.() ?? String(Date.now());
 
     const { data, error } = await supabase
       .from("subscriptions")
@@ -63,39 +72,38 @@ serve(async (req) => {
       .single();
 
     if (error) {
-      console.error("DB ERROR:", error);
-
       return new Response(
         JSON.stringify({ error: error.message }),
         {
           status: 500,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
     }
 
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "application/json",
-      },
-    });
+    return new Response(
+  JSON.stringify({
+    message: "Payment request created",
+    subscription: data,
+    next_step: "verify-payment",
+    transaction_ref: data.transaction_ref,
+    status: "pending",
+  }),
+  {
+    status: 200,
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "application/json",
+    },
+  }
+);
 
   } catch (err) {
-    console.error("FUNCTION ERROR:", err);
-
     return new Response(
       JSON.stringify({ error: String(err) }),
       {
         status: 500,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
   }

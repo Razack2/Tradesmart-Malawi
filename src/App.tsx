@@ -26,6 +26,7 @@ const ManageCourses = lazy(() => import("./pages/admin/ManageCourses"));
 const ManageModules = lazy(() => import("./pages/admin/ManageModules"));
 const ManageLessons = lazy(() => import("./pages/admin/ManageLessons"));
 const ManageQuizzes = lazy(() => import("./pages/admin/ManageQuizzes"));
+const AdminUsersPage = lazy(() => import("./pages/admin/UsersPage"));
 
 const queryClient = new QueryClient();
 
@@ -70,6 +71,7 @@ const App = () => (
                       <Route path="modules" element={<ManageModules />} />
                       <Route path="lessons" element={<ManageLessons />} />
                       <Route path="quizzes" element={<ManageQuizzes />} />
+                      <Route path="users" element={<AdminUsersPage />} />
                     </Route>
                   </Route>
 
