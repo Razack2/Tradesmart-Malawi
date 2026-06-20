@@ -344,12 +344,14 @@ export function AuthProvider({
         data,
         error,
       } =
-        await supabase.auth.signUp(
-          {
-            email,
-            password,
-          }
-        );
+        await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            // redirect the user to login after they click the confirmation link
+            emailRedirectTo: (typeof window !== 'undefined' ? window.location.origin : '') + '/login',
+          },
+        });
 
       if (error) {
         return {
@@ -394,6 +396,9 @@ export function AuthProvider({
           );
         }
       }
+       await supabase.auth.signOut();
+      setUser(null);
+      
 
       return {
         success: true,
@@ -473,8 +478,7 @@ export function AuthProvider({
     return true;
   };
   
-  // Realtime listener: update local user state when the user_profiles row changes
-  // (so admin actions updating the DB are reflected in the UI immediately)
+
   useEffect(() => {
     if (!user?.id) return;
 

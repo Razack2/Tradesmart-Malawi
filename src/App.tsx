@@ -10,6 +10,7 @@ import { ProgressProvider } from "@/contexts/ProgressContext";
 import { ProtectedRoute, AdminRoute } from "@/components/ProtectedRoute";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import NotFound from "./pages/NotFound";
+import VerifyEmail from "./pages/verify-email";
 
 // Lazy loaded pages
 const Home = lazy(() => import("./pages/Index"));
@@ -55,6 +56,8 @@ const App = () => (
                   <Route path="/" element={<Home />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
+                  <Route path="/verify-email" element={<VerifyEmail />}
+/>
 
                   {/* Protected dashboard routes */}
                   <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
