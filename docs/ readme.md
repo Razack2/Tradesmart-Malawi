@@ -43,15 +43,7 @@ Non-Functional Requirements
 - Observability:
   - Console logging in serverless functions and critical client flows (login/register/payment) for debugging (search for `console` in [`supabase/functions`](supabase/functions) and [`src/contexts/AuthContext.tsx`](src/contexts/AuthContext.tsx)).
 
-Basic run / dev
-```sh
-npm install
-npm run dev
-```
-Build
-```sh
-npm run build
-```
+
 
 Useful files
 - [`src/App.tsx`](src/App.tsx) — routes & providers
@@ -62,4 +54,3 @@ Useful files
 - [`src/services/contentService.ts`](src/services/contentService.ts)
 - [supabase/functions](supabase/functions) — serverless payment endpoints
 
-If you want this converted into a separate formal SRS file (IEEE-style) or split into ISSUE/TODO checklists, I can add it.
