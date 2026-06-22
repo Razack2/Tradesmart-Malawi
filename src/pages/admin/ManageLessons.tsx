@@ -140,13 +140,27 @@ export default function ManageLessons() {
   };
 
 const convertYoutubeUrl = (url: string) => {
-  const match = url.match(
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/i
-  );
+  try {
+    if (url.includes("youtube.com/watch")) {
+      const videoId =
+        new URL(url).searchParams.get("v");
 
-  if (!match) return url;
+      if (videoId) {
+        return `https://www.youtube.com/embed/${videoId}`;
+      }
+    }
 
-  return `https://www.youtube.com/embed/${match[1]}`;
+    if (url.includes("youtu.be/")) {
+      const videoId =
+        url.split("youtu.be/")[1];
+
+      return `https://www.youtube.com/embed/${videoId}`;
+    }
+
+    return url;
+  } catch {
+    return url;
+  }
 };
   const handleSave = async () => {
     if (!title || !moduleId) return;
@@ -175,7 +189,7 @@ const convertYoutubeUrl = (url: string) => {
           .insert({
             title,
             content,
-            video_url: videoUrl || null,
+            video_url: convertYoutubeUrl(videoUrl) || null,
             image_url: imageUrl || null,
             module_id: moduleId,
             order_index: order,
