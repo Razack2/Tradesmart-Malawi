@@ -333,85 +333,56 @@ export function AuthProvider({
     }
   };
 
-  // Register
-  const register = async (
-    email: string,
-    password: string,
-    name: string
-  ) => {
-    try {
-      const {
-        data,
-        error,
-      } =
-        await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            // redirect the user to login after they click the confirmation link
-            emailRedirectTo: (typeof window !== 'undefined' ? window.location.origin : '') + '/login',
+// Register
+const register = async (
+  email: string,
+  password: string,
+  name: string
+) => {
+  try {
+    const { data, error } =
+      await supabase.functions.invoke(
+        "register",
+        {
+          body: {
+            name: name.trim(),
+            email: email.trim().toLowerCase(),
+            password,
           },
-        });
-
-      if (error) {
-        return {
-          success: false,
-          error:
-            error.message,
-        };
-      }
-
-      if (
-        data.user
-      ) {
-        const {
-          error:
-            profileError,
-        } =
-          await supabase
-            .from(
-              "user_profiles"
-            )
-            .insert({
-              id:
-                data.user.id,
-              email:
-                data.user
-                  .email,
-              name,
-              role:
-                "student",
-              subscription:
-                "free",
-              unlocked_levels:
-                [],
-              has_active_subscription: false,
-            });
-
-        if (
-          profileError
-        ) {
-          console.error(
-            profileError
-          );
         }
-      }
-       await supabase.auth.signOut();
-      setUser(null);
-      
+      );
 
+    // 🔥 IMPORTANT: log full response
+    console.log("EDGE FUNCTION DATA:", data);
+    console.log("EDGE FUNCTION ERROR:", error);
+
+    if (error) {
       return {
-        success: true,
+        success: false,
+        error: error.message,
       };
-    } catch {
+    }
+
+    if (!data?.success) {
       return {
         success: false,
         error:
+          data?.error ||
           "Registration failed",
       };
     }
-  };
 
+    return {
+      success: true,
+      user: data.user,
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      error: err?.message || "Registration failed",
+    };
+  }
+};
   // Logout
   const logout =
     async () => {

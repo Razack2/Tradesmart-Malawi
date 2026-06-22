@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TrendingUp, Loader2 } from "lucide-react";
 
+
 export default function Register() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
