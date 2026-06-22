@@ -139,6 +139,15 @@ export default function ManageLessons() {
     setShowForm(true);
   };
 
+const convertYoutubeUrl = (url: string) => {
+  const match = url.match(
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/i
+  );
+
+  if (!match) return url;
+
+  return `https://www.youtube.com/embed/${match[1]}`;
+};
   const handleSave = async () => {
     if (!title || !moduleId) return;
 
@@ -150,7 +159,7 @@ export default function ManageLessons() {
           .update({
             title,
             content,
-            video_url: videoUrl || null,
+            video_url: convertYoutubeUrl(videoUrl) || null,
             image_url: imageUrl || null,
             module_id: moduleId,
             order_index: order,

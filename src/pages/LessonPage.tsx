@@ -99,13 +99,41 @@ export default function LessonPage() {
       <p className="text-muted-foreground mb-6">
         {lesson.description}
       </p>
-
-      {/* CONTENT */}
-      <div className="bg-card border rounded-xl p-6">
-        <p className="text-sm leading-relaxed">
-          {lesson.content}
-        </p>
-      </div>
+{/* VIDEO */}
+{lesson.videoUrl && (
+  <div className="mb-6">
+    <div className="aspect-video overflow-hidden rounded-xl border">
+      <iframe
+        src={lesson.videoUrl}
+        title={lesson.title}
+        className="w-full h-full"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+      />
     </div>
+  </div>
+)}
+
+{/* IMAGE */}
+{lesson.imageUrl && (
+  <div className="mb-6">
+    <img
+      src={lesson.imageUrl}
+      alt={lesson.title}
+      className="w-full rounded-xl border"
+    />
+  </div>
+)}
+
+{/* CONTENT */}
+<div className="bg-card border rounded-xl p-6">
+  <div
+    className="prose max-w-none"
+    dangerouslySetInnerHTML={{
+      __html: lesson.content || "",
+    }}
+  />
+</div>
+</div>
   );
 }
