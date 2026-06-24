@@ -28,6 +28,7 @@ export default function ManageQuizzes() {
   const [options, setOptions] = useState(["", "", "", ""]);
   const [correctAnswer, setCorrectAnswer] = useState(0);
   const [questionType, setQuestionType] = useState<"multiple_choice" | "true_false">("multiple_choice");
+  
 
   // Fetch data from Supabase
   useEffect(() => {

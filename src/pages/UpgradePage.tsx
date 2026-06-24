@@ -103,7 +103,7 @@ export default function UpgradePage() {
       </h1>
 
       <p className="text-muted-foreground mb-6">
-        Unlock all advanced lessons for MK5,000 per month.
+        Unlock all advanced lessons for MK10,000 per month.
         Get access to expert level content for free after subscribing.
          You can cancel your subscription at any time.
       </p>
@@ -115,7 +115,7 @@ export default function UpgradePage() {
         <div className="text-sm text-muted-foreground mb-6">
          <p>Payment feature is currently done by contacting the administrator via WhatsApp.
            You will be provided with a reference number to confirm your payment.</p> 
-          <p>Payment is processed via TNM Mpamba or Airtel Money.</p>
+          <p>Payment is processed via TNM Mpamba a or Airtel Money.</p>
           <p>After payment, your Premium access will be activated within 24 hours.</p>
         </div>
       {/* CARD */}
