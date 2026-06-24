@@ -36,6 +36,21 @@ export default function CoursePage() {
 
   const progress = getLessonProgress(allLessonIds);
 
+  // =========================
+  // FLAT LESSON ORDER
+  // =========================
+  const orderedLessons = course.modules.flatMap((m) => m.lessons);
+
+  const isLessonUnlocked = (lessonId: string) => {
+    const index = orderedLessons.findIndex((l) => l.id === lessonId);
+
+    if (index === 0) return true;
+
+    const previousLesson = orderedLessons[index - 1];
+
+    return isCompleted(previousLesson.id);
+  };
+
   return (
     <div className="p-6 max-w-4xl mx-auto animate-fade-in">
       <Button variant="ghost" size="sm" asChild className="mb-4">
@@ -51,9 +66,7 @@ export default function CoursePage() {
           {course.category}
         </span>
 
-        <h1 className="text-3xl font-bold mt-1">
-          {course.title}
-        </h1>
+        <h1 className="text-3xl font-bold mt-1">{course.title}</h1>
 
         <p className="text-muted-foreground mt-1">
           {course.description}
@@ -96,12 +109,18 @@ export default function CoursePage() {
                   !hasSubscription &&
                   lessonNumber > FREE_LESSON_LIMIT;
 
+                const unlocked = isLessonUnlocked(lesson.id);
+
+                const blocked = isLocked || !unlocked;
+
                 return (
                   <div
                     key={lesson.id}
-                    className="flex items-center gap-3 p-4"
+                    className={`flex items-center gap-3 p-4 ${
+                      blocked ? "opacity-60" : ""
+                    }`}
                   >
-                    {isLocked ? (
+                    {blocked ? (
                       <>
                         <Lock className="h-5 w-5 text-red-500" />
 
@@ -109,11 +128,15 @@ export default function CoursePage() {
                           {lesson.title}
                         </span>
 
-                        <Button size="sm" className="ml-auto" asChild>
-                          <Link to="/upgrade">
-                            Subscribe
-                          </Link>
-                        </Button>
+                        {isLocked ? (
+                          <Button size="sm" className="ml-auto" asChild>
+                            <Link to="/upgrade">Subscribe</Link>
+                          </Button>
+                        ) : (
+                          <span className="ml-auto text-xs text-muted-foreground">
+                            Locked
+                          </span>
+                        )}
                       </>
                     ) : (
                       <Link
